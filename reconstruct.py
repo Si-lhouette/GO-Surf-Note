@@ -77,7 +77,12 @@ def query_rgb(model, coords, volume_origin, world_dim, use_normals=False,
 
 def main(args):
     config = load_config(scene=args.scene, exp_name=args.exp_name, use_config_snapshot=True)
-    suffix = config["iterations"]
+    target_iter=args.target_iter
+    suffix = 0
+    if target_iter < 0:
+        suffix = config["iterations"]
+    else:
+        suffix = target_iter
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -140,6 +145,7 @@ if __name__ == "__main__":
     parser.add_argument("--exp_name", type=str, default="release_test")
     parser.add_argument("--scene", type=str, default="grey_white_room")
     parser.add_argument("--color_mesh", action="store_true")
+    parser.add_argument("--target_iter", type=int, default=-1)
     args = parser.parse_args()
     
     main(args)

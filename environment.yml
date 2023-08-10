@@ -233,7 +233,7 @@ dependencies:
     - rsa==4.9
     - scikit-learn==1.1.1
     - send2trash==1.8.0
-    - git+https://github.com/tymoteuszb/smooth-sampler
+    # - git+https://github.com/tymoteuszb/smooth-sampler
     - sniffio==1.2.0
     - soupsieve==2.3.2.post1
     - stack-data==0.3.0

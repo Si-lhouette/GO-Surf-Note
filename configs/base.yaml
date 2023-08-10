@@ -1,16 +1,17 @@
 dataset_type: "rgbd"
-datasets_dir: "/media/jingwen/Data1/neural_rgbd_data"
+datasets_dir: "/home/michael/Recon/go_surf_ws/src/go-surf/neural_rgbd_data"
 lr:
     decoder: 0.001
     features: 0.01
     inv_s: 0.001
     poses: 0.0005
-iterations: 10000
-voxel_sizes: [0.03, 0.06, 0.24, 0.96]
+iterations: 1000
+voxel_sizes: [0.03, 0.06, 0.24, 0.96] # 使用多层不同分辨率的格子进行训练
 truncation: 0.16
 sdf_feature_dim: [4, 4, 4, 4]
 rgb_feature_dim: [0, 6, 0, 0]
 optimise_poses: true
+downsample_factor: 1 # 像素(u, v)的skip倍率
 decoder:
     geometry:
         W: 32
@@ -44,5 +45,5 @@ n_samples: 96
 n_importance: 36
 use_view_dirs: true
 batch_size: 6144
-trainskip: 1
+trainskip: 20 # 训练集中frame的skip步长，防止相邻几帧重复度太高，可提高训练效率，原本 = 1
 reconstruct_upsample: 3

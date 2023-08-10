@@ -133,6 +133,9 @@ class RGBDDataset(torch.utils.data.Dataset):
             self.rgb_list.append(rgb)
             self.depth_list.append(depth)
             self.K_list.append(K)
+
+        print("depth size: ", len(self.depth_list), ", rgb_size: ", len(self.rgb_list))
+        print("img size(H, W): ", H, ", ", W)
             
         self.rgb_list = torch.stack(self.rgb_list, dim=0)
         self.depth_list = torch.stack(self.depth_list, dim=0)
@@ -162,7 +165,7 @@ if __name__ == "__main__":
     import torch
     from tools.vis_cameras import visualize, draw_cuboid
     from model.utils import compute_world_dims
-    data_dir = "/media/jingwen/Data/neural_rgbd_data"
+    data_dir = "/home/michael/Recon/go_surf_ws/src/go-surf/neural_rgbd_data"
     scene = "morning_apartment"
     dataset = RGBDDataset(os.path.join(data_dir, scene))
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, shuffle=False, num_workers=4)

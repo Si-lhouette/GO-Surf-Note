@@ -8,6 +8,7 @@ outputs/
 .ipynb_checkpoints/
 ARKitScenes/
 data/**/*
+neural_rgbd_data/
 scratch_book.py
 *.ply
 *.mp4

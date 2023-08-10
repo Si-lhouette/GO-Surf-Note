@@ -1,7 +1,8 @@
 import torch
 from dataio.get_scene_bounds import get_scene_bounds
 
-
+# 输出补偿margin之后的空间xyz尺寸,grid map 的中心，各个分辨率下的多层grid下的voxel_dims
+# ex. voxel_dims = torch.tensor([[12, 11, 10], [6, 5, 4], [4, 4, 3]], device='cuda')
 def compute_world_dims(bounds, voxel_sizes, n_levels, margin=0.0, device=torch.device("cpu")):
     coarsest_voxel_dims = ((bounds[:,1] - bounds[:,0] + margin*2) / voxel_sizes[-1])
     coarsest_voxel_dims = torch.ceil(coarsest_voxel_dims) + 1
