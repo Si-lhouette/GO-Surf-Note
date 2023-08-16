@@ -62,14 +62,18 @@ def alphanum_key(s):
     return [int(x) if x.isdigit() else x for x in re.split('([0-9]+)', s)]
 
 
-class RGBDDataset(torch.utils.data.Dataset):
-    def __init__(self, basedir, load=True, trainskip=1, downsample_factor=1, crop=0, device=torch.device("cpu")):
-        super(RGBDDataset).__init__()
+class RealsenseDataset(torch.utils.data.Dataset):
+    def __init__(self, basedir, load=True, trainskip=1, downsample_factor=1, crop=0, near: float = 0.01,
+                 far: float = 5.0, device=torch.device("cpu")):
+        super(RealsenseDataset).__init__()
 
         self.basedir = basedir
         self.device = device
         self.downsample_factor = downsample_factor
         self.crop = crop
+        self.near = near
+        self.far = far
+
         # Get image filenames, poses and intrinsics
         # depth_files 是所有深度图的文件名的列表（按数字排序）
         self.img_files = [f for f in sorted(os.listdir(os.path.join(basedir, 'images')), key=alphanum_key) if f.endswith('png')]
@@ -95,6 +99,7 @@ class RGBDDataset(torch.utils.data.Dataset):
         self.depth_cleaner = cv2.rgbd.DepthCleaner_create(cv2.CV_32F, 5)
 
         num_frames = len(self.img_files)
+        print("dataset/num_frames: ", num_frames)
         train_frame_ids = list(range(0, num_frames, trainskip))
 
         self.frame_ids = []
@@ -102,6 +107,12 @@ class RGBDDataset(torch.utils.data.Dataset):
             if valid_poses[id]:
                 self.frame_ids.append(id)
         # self.frame_ids = self.frame_ids[:200]
+
+        self.c2b = np.array([[ 0.,  0., 1., 0.05],
+                             [-1.,  0., 0., 0.  ],
+                             [ 0., -1., 0., 0.1 ],
+                             [ 0.,  0., 0., 1.  ]]).astype(np.float32)
+   
 
         self.c2w_gt_list = []
         self.c2w_list = []
@@ -124,6 +135,8 @@ class RGBDDataset(torch.utils.data.Dataset):
             c2w = np.array(self.all_poses[frame_id]).astype(np.float32)
             # re-align all the poses to world coordinate
             c2w = self.align_matrix @ c2w
+            # TODO
+            c2w = c2w @ self.c2b
             c2w = torch.from_numpy(c2w).to(self.device)
             rgb = imageio.imread(os.path.join(self.basedir, 'images', self.img_files[frame_id]))
             depth = imageio.imread(os.path.join(self.basedir, 'depth_filtered', self.depth_files[frame_id]))
@@ -131,7 +144,16 @@ class RGBDDataset(torch.utils.data.Dataset):
             # focal = load_focal_length(os.path.join(self.basedir, 'focal.txt'))
             rgb = (np.array(rgb) / 255.).astype(np.float32)
             rgb = cv2.resize(rgb, (W, H), interpolation=cv2.INTER_AREA)
-            depth = (np.array(depth) / 1000.0).astype(np.float32)
+
+            # depth = (np.array(depth) / 1000.0).astype(np.float32)
+            # Fliter
+            depth = (np.array(depth)).astype(np.float32)
+            depth_filtered = self.depth_cleaner.apply(depth) / 1000.
+            depth_filtered[depth == 0.] = 0.
+            depth_filtered = np.nan_to_num(depth_filtered)
+            depth = depth_filtered
+            depth[depth < self.near] = 0.
+            depth[depth > self.far] = 0.
 
             # Crop the undistortion artifacts
             if self.crop > 0:
@@ -193,7 +215,7 @@ if __name__ == "__main__":
     from model.utils import compute_world_dims
     data_dir = "/home/michael/Recon/go_surf_ws/src/go-surf/neural_rgbd_data"
     scene = "morning_apartment"
-    dataset = RGBDDataset(os.path.join(data_dir, scene))
+    dataset = RealsenseDataset(os.path.join(data_dir, scene))
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, shuffle=False, num_workers=4)
 
     poses = []

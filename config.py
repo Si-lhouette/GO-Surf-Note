@@ -33,6 +33,8 @@ def load_config(exp_name=None, scene="", use_config_snapshot=False):
         if os.path.exists(config_path):
             with open(config_path) as f:
                 config = {**config, **yaml.load(f, Loader=yaml.FullLoader)}
+        else:
+            raise NotImplementedError("No scene specific config")
 
         # 将字典对象config写入yaml文件f
         with open(os.path.join(log_dir, config_file), "w") as f:

@@ -92,6 +92,11 @@ def get_scene_bounds(scene_name):
         y_min, y_max = -0.20, 1.00
         z_min, z_max = 0.20, 3.80
 
+    elif scene_name == 'FastLab':
+        x_min, x_max = -2.0, 2.00
+        y_min, y_max = -2.00, 2.00
+        z_min, z_max = 0.20, 2.00
+
     else:
         raise NotImplementedError
 

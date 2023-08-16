@@ -7,6 +7,7 @@ import torch.nn.functional as F
 
 from dataio.rgbd_dataset import RGBDDataset
 from dataio.scannet_dataset import ScannetDataset
+from dataio.realsense_dataset import RealsenseDataset
 from model.sdf_grid_model import SDFGridModel, compute_grads
 from config import load_config
 import marching_cubes as mcubes
@@ -94,6 +95,8 @@ def main(args):
         dataset = ScannetDataset(os.path.join(config["datasets_dir"], args.scene), load=False, trainskip=config["trainskip"], device=torch.device("cpu"))
     elif config["dataset_type"] == "rgbd":
         dataset = RGBDDataset(os.path.join(config["datasets_dir"], args.scene), load=False, trainskip=config["trainskip"], device=torch.device("cpu"))
+    elif config["dataset_type"] == "realsense":
+        dataset = RealsenseDataset(os.path.join(config["datasets_dir"], args.scene), trainskip=config["trainskip"], device=torch.device("cpu"))
     else:
         raise NotImplementedError
 
@@ -104,6 +107,7 @@ def main(args):
     th = 0.
     with torch.no_grad():
         _, _, nx, ny, nz = model.grid.volumes[0].shape  # [1, C, nx, ny, nz]
+        print("model.grid.volumes[0].shape: ", model.grid.volumes[0].shape)
         nx = (nx - 1) * config["reconstruct_upsample"] + 1
         ny = (ny - 1) * config["reconstruct_upsample"] + 1
         nz = (nz - 1) * config["reconstruct_upsample"] + 1

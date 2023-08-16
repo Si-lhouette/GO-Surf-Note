@@ -8,6 +8,17 @@
 
   运行训练代码之前需要先启动 `roscore`，然后启动 `rviz`，即可见SDF
 
+- 增加从rosbag生成数据集的脚本 
+  ```
+  python2 generate_dataset_from_rosbag.py
+  ```
+  直接在脚本中修改参数，
+  该脚本会解析rosbag中的`odom_topic_name`, `image_topic_name`, `depth_topic_name`，分别写入`output_dir`中的`poses.txt`, `/images`, `/depth_filtered`.
+
+- 增加与realsense实物数据对应的Dataset Class:
+  `realsense_dataset.py`
+
+
 
 以下为原作者（Jingwen Wang）ReadMe（含修改）
 

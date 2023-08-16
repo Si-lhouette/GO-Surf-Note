@@ -10,6 +10,7 @@ from model.utils import matrix_to_pose6d, pose6d_to_matrix
 from model.utils import coordinates
 from dataio.scannet_dataset import ScannetDataset
 from dataio.rgbd_dataset import RGBDDataset
+from dataio.realsense_dataset import RealsenseDataset
 
 import rospy
 from sensor_msgs.msg import PointCloud2, PointField
@@ -39,11 +40,16 @@ def main(args):
 
     # 载入数据集
     # 支持scannet数据集 or 普通rgbd数据集
+    print("dataset_type: ", config["dataset_type"])
     if config["dataset_type"] == "scannet":
         dataset = ScannetDataset(os.path.join(config["datasets_dir"], args.scene), trainskip=config["trainskip"], device=torch.device("cpu"))
     elif config["dataset_type"] == "rgbd":
         dataset = RGBDDataset(os.path.join(config["datasets_dir"], args.scene), trainskip=config["trainskip"],
             downsample_factor=config["downsample_factor"], device=torch.device("cpu"))
+    elif config["dataset_type"] == "realsense":
+        dataset = RealsenseDataset(os.path.join(config["datasets_dir"], args.scene), trainskip=config["trainskip"],
+            device=torch.device("cpu"))
+
     else:
         raise NotImplementedError
     
@@ -134,21 +140,31 @@ def main(args):
         fx, fy = dataset.K_list[frame_id, 0, 0], dataset.K_list[frame_id, 1, 1]
         cx, cy = dataset.K_list[frame_id, 0, 2], dataset.K_list[frame_id, 1, 2]
 
+        # TODO
+        # if True or config["dataset_type"] == "scannet":  # OpenCV
         if config["dataset_type"] == "scannet":  # OpenCV
             rays_d_cam = torch.stack([(u - cx) / fx, (v - cy) / fy, torch.ones_like(fx)], dim=-1).to(device)
-        else:  # OpenGL 将图像平面坐标系转换到相机坐标系下
+            # print("rays_d_cam: ", rays_d_cam)
+        elif config["dataset_type"] == "rgbd":  # OpenGL 将图像平面坐标系转换到相机坐标系下
             rays_d_cam = torch.stack([(u - cx) / fx, -(v - cy) / fy, -torch.ones_like(fy)], dim=-1).to(device)
+            # print("rays_d_cam: ", rays_d_cam)
+        elif config["dataset_type"] == "realsense":
+            rays_d_cam = torch.stack([(u - cx) / fx, (v - cy) / fy, torch.ones_like(fx)], dim=-1).to(device)
         
         if optimise_poses:
             batch_poses = poses[frame_id]
             c2w = pose6d_to_matrix(batch_poses)
         else:
             c2w = poses_mat_init[frame_id]
+            # print("c2w: ", c2w)
         
         # ray 起点
         rays_o = c2w[:,:3,3] # 这里写成c2w[0:3,3]不是一样的吗，会提取出转移矩阵的位置部分
+        # print("rays_o: ", rays_o)
+
         # ray 终点
         rays_d = torch.bmm(c2w[:, :3, :3], rays_d_cam[..., None]).squeeze()
+        # print("rays_d: ", rays_d)
         
         # 调用model的forward函数
         ret = model(rays_o, rays_d, rgb, depth, inv_s=torch.exp(10. * inv_s),

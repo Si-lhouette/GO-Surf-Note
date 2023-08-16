@@ -1,0 +1,7 @@
+dataset_type: "realsense"
+far: 5.5 # render ray的最远距离
+trainskip: 1
+optimise_poses: false
+iterations: 500
+smoothness_std: 0.02
+optimise_poses: true

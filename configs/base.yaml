@@ -5,7 +5,7 @@ lr:
     features: 0.01
     inv_s: 0.001
     poses: 0.0005
-iterations: 1000
+iterations: 200
 voxel_sizes: [0.03, 0.06, 0.24, 0.96] # 使用多层不同分辨率的格子进行训练
 truncation: 0.16
 sdf_feature_dim: [4, 4, 4, 4]
@@ -45,5 +45,5 @@ n_samples: 96
 n_importance: 36
 use_view_dirs: true
 batch_size: 6144
-trainskip: 20 # 训练集中frame的skip步长，防止相邻几帧重复度太高，可提高训练效率，原本 = 1
+trainskip: 40 # 训练集中frame的skip步长，防止相邻几帧重复度太高，可提高训练效率，原本 = 1
 reconstruct_upsample: 3
