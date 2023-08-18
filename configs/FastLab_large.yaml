@@ -1,5 +1,5 @@
 dataset_type: "realsense"
-odom_type: "body"
+odom_type: "camera"
 far: 5.5 # render ray的最远距离
 trainskip: 1
 optimise_poses: false

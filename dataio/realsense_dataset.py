@@ -64,7 +64,7 @@ def alphanum_key(s):
 
 class RealsenseDataset(torch.utils.data.Dataset):
     def __init__(self, basedir, load=True, trainskip=1, downsample_factor=1, crop=0, near: float = 0.01,
-                 far: float = 5.0, device=torch.device("cpu")):
+                 far: float = 5.0, device=torch.device("cpu"), odom_type = "camera"):
         super(RealsenseDataset).__init__()
 
         self.basedir = basedir
@@ -73,6 +73,7 @@ class RealsenseDataset(torch.utils.data.Dataset):
         self.crop = crop
         self.near = near
         self.far = far
+        self.odom_type = odom_type
 
         # Get image filenames, poses and intrinsics
         # depth_files 是所有深度图的文件名的列表（按数字排序）
@@ -80,11 +81,11 @@ class RealsenseDataset(torch.utils.data.Dataset):
         self.depth_files = [f for f in sorted(os.listdir(os.path.join(basedir, 'depth_filtered')), key=alphanum_key) if f.endswith('png')]
         # self.gt_depth_files = [f for f in sorted(os.listdir(os.path.join(basedir, 'depth')), key=alphanum_key) if f.endswith('png')]
         self.all_poses, valid_poses = load_poses(os.path.join(basedir, 'trainval_poses.txt'))
-        self.all_gt_poses, valid_gt_poses = load_poses(os.path.join(basedir, 'poses.txt'))
+        # self.all_gt_poses, valid_gt_poses = load_poses(os.path.join(basedir, 'poses.txt'))
 
         # get transformation between first bundle-fusion pose and first gt pose
         init_pose = np.array(self.all_poses[0]).astype(np.float32)
-        init_gt_pose = np.array(self.all_gt_poses[0]).astype(np.float32)
+        init_gt_pose = np.array(self.all_poses[0]).astype(np.float32)
         self.align_matrix = init_gt_pose @ np.linalg.inv(init_pose)
 
         depth = imageio.imread(os.path.join(self.basedir, 'depth_filtered', self.depth_files[0]))
@@ -108,13 +109,14 @@ class RealsenseDataset(torch.utils.data.Dataset):
                 self.frame_ids.append(id)
         # self.frame_ids = self.frame_ids[:200]
 
+        # camra_to_body
         self.c2b = np.array([[ 0.,  0., 1., 0.05],
                              [-1.,  0., 0., 0.  ],
                              [ 0., -1., 0., 0.1 ],
                              [ 0.,  0., 0., 1.  ]]).astype(np.float32)
    
 
-        self.c2w_gt_list = []
+        # self.c2w_gt_list = []
         self.c2w_list = []
         self.rgb_list = []
         self.depth_list = []
@@ -130,13 +132,14 @@ class RealsenseDataset(torch.utils.data.Dataset):
 
     def get_all_frames(self):
         for i, frame_id in enumerate(self.frame_ids):
-            c2w_gt = np.array(self.all_gt_poses[frame_id]).astype(np.float32)
-            c2w_gt = torch.from_numpy(c2w_gt).to(self.device)
+            # c2w_gt = np.array(self.all_gt_poses[frame_id]).astype(np.float32)
+            # c2w_gt = torch.from_numpy(c2w_gt).to(self.device)
             c2w = np.array(self.all_poses[frame_id]).astype(np.float32)
             # re-align all the poses to world coordinate
             c2w = self.align_matrix @ c2w
             # TODO
-            c2w = c2w @ self.c2b
+            if self.odom_type == "body":
+                c2w = c2w @ self.c2b
             c2w = torch.from_numpy(c2w).to(self.device)
             rgb = imageio.imread(os.path.join(self.basedir, 'images', self.img_files[frame_id]))
             depth = imageio.imread(os.path.join(self.basedir, 'depth_filtered', self.depth_files[frame_id]))
@@ -176,7 +179,7 @@ class RealsenseDataset(torch.utils.data.Dataset):
             #                   [0., focal, (H - 1) / 2],
             #                   [0., 0., 1.]], dtype=torch.float32).to(self.device)
 
-            self.c2w_gt_list.append(c2w_gt)
+            # self.c2w_gt_list.append(c2w_gt)
             self.c2w_list.append(c2w)
             self.rgb_list.append(rgb)
             self.depth_list.append(depth)
@@ -194,7 +197,7 @@ class RealsenseDataset(torch.utils.data.Dataset):
             "frame_id": self.frame_ids[id],
             "sample_id": torch.tensor(id),
             "c2w": self.c2w_list[id],
-            "c2w_gt": self.c2w_gt_list[id],
+            # "c2w_gt": self.c2w_gt_list[id],
             "rgb": self.rgb_list[id],
             "depth": self.depth_list[id],
             "K": self.K_list[id]
@@ -231,9 +234,9 @@ if __name__ == "__main__":
         if depth.min().item() < depth_min:
             depth_min = depth.min().item()
         c2w = data["c2w"]
-        c2w_gt = data["c2w_gt"]
+        # c2w_gt = data["c2w_gt"]
         poses.append(c2w)
-        poses.append(c2w_gt)
+        # poses.append(c2w_gt)
         print("Loaded frame: {}, depth_max: {}".format(i, depth.max()))
     end = time.time()
     print("Time taken to load th entire dataset: {}, depth_min: {}, depth_max: {}".format(end - start, depth_min, depth_max))

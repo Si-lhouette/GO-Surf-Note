@@ -19,13 +19,13 @@ import numpy as np
 
 ### Parameters ###
 topic_time_diff = 30 # ms
-bag_path = '/home/michael/Recon/go_surf_ws/src/go-surf/neural_rgbd_data/FastLab/for_recon.bag'
-output_dir = '/home/michael/Recon/go_surf_ws/src/go-surf/neural_rgbd_data/FastLab/output_directory'
-odom_topic_name = '/vins_estimator/odometry'
-image_topic_name = '/cam_d430/infra1/image_rect_raw'
+bag_path = '/home/michael/Recon/go_surf_ws/src/go-surf/neural_rgbd_data/FastLab_large/for_recon_2.bag'
+output_dir = '/home/michael/Recon/go_surf_ws/src/go-surf/neural_rgbd_data/FastLab_large'
+odom_topic_name = '/vins_estimator/camera_pose'
+image_topic_name = '/cam_d430/color/image_raw'
 depth_topic_name = '/cam_d430/depth/image_rect_raw'
-time_range_lb = 39.4
-time_range_ub = 46.3
+time_range_lb = 11.0
+time_range_ub = 19.3
 ##################
 
 processed_timestamps = set()
@@ -34,14 +34,14 @@ bridge = CvBridge()
 bag = rosbag.Bag(bag_path, 'r')
 
 odom_queue = deque(maxlen=3)
-gray_image_queue = deque(maxlen=3)
-depth_image_queue = deque(maxlen=3)
+gray_image_queue = deque(maxlen=60) # 30 hz
+depth_image_queue = deque(maxlen=30) # 15 hz
 
 first_timestamp = None
 
 image_save_path = os.path.join(output_dir, 'images')
 depth_save_path = os.path.join(output_dir, 'depth_filtered')
-pose_save_path = os.path.join(output_dir, 'poses.txt')
+pose_save_path = os.path.join(output_dir, 'trainval_poses.txt')
 
 if not os.path.exists(image_save_path):
     os.makedirs(image_save_path)
@@ -51,6 +51,7 @@ if not os.path.exists(depth_save_path):
 write_cnt = 0
 for topic, msg, timestamp in bag.read_messages(topics=[odom_topic_name, image_topic_name, depth_topic_name]):
     # 更新一个msg
+    timestamp = msg.header.stamp # 这个stamp才是真正准的
     if topic == odom_topic_name:
         odom_queue.append((msg, timestamp))
         timestamp_sec = timestamp.to_sec()

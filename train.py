@@ -48,7 +48,7 @@ def main(args):
             downsample_factor=config["downsample_factor"], device=torch.device("cpu"))
     elif config["dataset_type"] == "realsense":
         dataset = RealsenseDataset(os.path.join(config["datasets_dir"], args.scene), trainskip=config["trainskip"],
-            device=torch.device("cpu"))
+            device=torch.device("cpu"), odom_type=config["odom_type"])
 
     else:
         raise NotImplementedError

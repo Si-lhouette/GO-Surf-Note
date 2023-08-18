@@ -47,3 +47,4 @@ use_view_dirs: true
 batch_size: 6144
 trainskip: 40 # 训练集中frame的skip步长，防止相邻几帧重复度太高，可提高训练效率，原本 = 1
 reconstruct_upsample: 3
+odom_type: "camera" # camera or body
